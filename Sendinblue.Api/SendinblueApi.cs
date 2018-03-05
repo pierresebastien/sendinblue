@@ -18,8 +18,6 @@ namespace Sendinblue.Api
 
         RestClient _client;
 
-
-
         public SendinblueAPI(string apiKey, int apiTimeout = 2000)
         {
             ApiKey = apiKey;
@@ -50,8 +48,7 @@ namespace Sendinblue.Api
             }
             try
             {
-                var account = JsonConvert.DeserializeObject<Account>(response.Content);
-                return account;
+                return JsonConvert.DeserializeObject<Account>(response.Content);
             }
             catch (Exception e)
             {
@@ -63,7 +60,7 @@ namespace Sendinblue.Api
 
         #region Sender
 
-        public IEnumerable<Sender> GetSenders(Dictionary<string,string> datas = null)
+        public IEnumerable<Sender> GetSenders(Dictionary<string, string> datas = null)
         {
             var request = new RestRequest("senders")
             {
@@ -85,10 +82,12 @@ namespace Sendinblue.Api
 
             IRestResponse response = _client.Execute(request);
 
-            if (response.StatusCode != HttpStatusCode.OK)
+            if (response.StatusCode == HttpStatusCode.BadRequest)
             {
-                throw new WebException("Invalid request senders.");
+                var badRequest = JsonConvert.DeserializeObject<BadRequest>(response.Content);
+                throw new WebException($"Bad request: {badRequest.Message}.");
             }
+
             try
             {
                 var senderResult = JsonConvert.DeserializeObject<SenderResult>(response.Content);
@@ -100,9 +99,10 @@ namespace Sendinblue.Api
             }
         }
 
-        public void CreateSender(string name, string email, IpSender [] ips = null)
+        public CreateSenderResult CreateSender(string name, string email, IpSender[] ips = null)
         {
-            if(string.IsNullOrEmpty(name)){
+            if (string.IsNullOrEmpty(name))
+            {
                 throw new IllegalArgumentException("Name is empty.");
             }
             if (string.IsNullOrEmpty(email))
@@ -118,27 +118,39 @@ namespace Sendinblue.Api
 
             request.AddHeader("api-key", ApiKey);
 
-            request.AddParameter("name",name);
+            request.AddParameter("name", name);
             request.AddParameter("email", email);
 
-            if(ips != null){
+            if (ips != null)
+            {
                 var json = JsonConvert.SerializeObject(ips);
-                request.AddParameter("ips",json);
+                request.AddParameter("ips", json);
             }
 
             IRestResponse response = _client.Execute(request);
 
-            if (response.StatusCode != HttpStatusCode.Created)
+            if (response.StatusCode == HttpStatusCode.BadRequest)
             {
-                throw new WebException("Invalid request create sender.");
+                var badRequest = JsonConvert.DeserializeObject<BadRequest>(response.Content);
+                throw new WebException($"Bad request: {badRequest.Message}.");
+            }
+
+            try
+            {
+                return JsonConvert.DeserializeObject<CreateSenderResult>(response.Content);
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Invalid deserialize object: {e.Message}");
             }
 
         }
 
-        public void UpdateSender(string senderId, string name, string email, IpSender[] ips = null)
+        public void UpdateSender(int senderId, string name, string email, IpSender[] ips = null)
         {
-            if(string.IsNullOrEmpty(senderId)){
-                throw new IllegalArgumentException("SenderId is empty.")
+            if (senderId != 0)
+            {
+                throw new IllegalArgumentException("SenderId is empty.");
             }
             if (string.IsNullOrEmpty(name))
             {
@@ -168,17 +180,118 @@ namespace Sendinblue.Api
 
             IRestResponse response = _client.Execute(request);
 
-            if(response.StatusCode == HttpStatusCode.NotFound){
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
                 throw new WebException($"SenderIp :{senderId} is not found.");
             }
 
-            if(response.StatusCode == HttpStatusCode.BadRequest){
-                throw new WebException($"Bad request : {response.ErrorMessage}");
+            if (response.StatusCode == HttpStatusCode.BadRequest)
+            {
+                var badRequest = JsonConvert.DeserializeObject<BadRequest>(response.Content);
+                throw new WebException($"Bad request: {badRequest.Message}.");
             }
 
             if (response.StatusCode != HttpStatusCode.Created)
             {
                 throw new WebException("Invalid request account.");
+            }
+
+        }
+
+        public void DeleteSender(int senderId)
+        {
+            if (senderId != 0)
+            {
+                throw new IllegalArgumentException("SenderId is empty.");
+            }
+
+            var request = new RestRequest($"senders/{senderId}")
+            {
+                Method = Method.DELETE,
+                Timeout = ApiTimeout
+            };
+
+            request.AddHeader("api-key", ApiKey);
+
+            IRestResponse response = _client.Execute(request);
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                throw new WebException($"SenderIp :{senderId} is not found.");
+            }
+
+            if (response.StatusCode == HttpStatusCode.BadRequest)
+            {
+                var badRequest = JsonConvert.DeserializeObject<BadRequest>(response.Content);
+                throw new WebException($"Bad request: {badRequest.Message}.");
+            }
+
+            if (response.StatusCode != HttpStatusCode.NoContent)
+            {
+                throw new WebException("Invalid request account.");
+            }
+
+        }
+
+        public IEnumerable<IpSender> GetIps(int senderId)
+        {
+
+            if (senderId != 0)
+            {
+                throw new IllegalArgumentException("SenderId is empty.");
+            }
+
+            var request = new RestRequest($"senders/{senderId}/ips")
+            {
+                Method = Method.GET,
+                Timeout = ApiTimeout
+            };
+
+            request.AddHeader("api-key", ApiKey);
+
+            IRestResponse response = _client.Execute(request);
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                throw new WebException($"SenderIp :{senderId} is not found.");
+            }
+
+            if (response.StatusCode == HttpStatusCode.BadRequest)
+            {
+                var badRequest = JsonConvert.DeserializeObject<BadRequest>(response.Content);
+                throw new WebException($"Bad request: {badRequest.Message}.");
+            }
+
+            try
+            {
+                return JsonConvert.DeserializeObject<IpsResult>(response.Content).Ips;
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Invalid deserialize object: {e.Message}");
+            }
+
+        }
+
+        public IEnumerable<IpSender> GetIps()
+        {
+            var request = new RestRequest($"senders/ips")
+            {
+                Method = Method.GET,
+                Timeout = ApiTimeout
+            };
+
+            request.AddHeader("api-key", ApiKey);
+
+            IRestResponse response = _client.Execute(request);
+
+            try
+            {
+                return JsonConvert.DeserializeObject<IpsResult>(response.Content).Ips;
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Invalid deserialize object: {e.Message}");
             }
 
         }
