@@ -1,0 +1,23 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sendinblue.Api", "Sendinblue.Api\Sendinblue.Api.csproj", "{55EBF171-CF39-470A-90C2-40C6DE48BA63}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sendinblue.Test", "Sendinblue.Test\Sendinblue.Test.csproj", "{39C1F79D-F314-4C97-9D6E-7F4CB0C127FE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{55EBF171-CF39-470A-90C2-40C6DE48BA63}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{55EBF171-CF39-470A-90C2-40C6DE48BA63}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{55EBF171-CF39-470A-90C2-40C6DE48BA63}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{55EBF171-CF39-470A-90C2-40C6DE48BA63}.Release|Any CPU.Build.0 = Release|Any CPU
+		{39C1F79D-F314-4C97-9D6E-7F4CB0C127FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{39C1F79D-F314-4C97-9D6E-7F4CB0C127FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{39C1F79D-F314-4C97-9D6E-7F4CB0C127FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{39C1F79D-F314-4C97-9D6E-7F4CB0C127FE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
