@@ -12,6 +12,8 @@ namespace Sendinblue.Api
         const string URL = "https://api.sendinblue.com/v3/";
         public const string Ip = "ip";
         public const string Domain = "domain";
+        public const string Limit = "limit";
+        public const string Offset = "offset";
 
         public string ApiKey { get; set; }
         public int ApiTimeout { get; set; }
@@ -182,7 +184,7 @@ namespace Sendinblue.Api
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
-                throw new WebException($"SenderIp :{senderId} is not found.");
+                throw new WebException($"SenderIp: {senderId} is not found.");
             }
 
             if (response.StatusCode == HttpStatusCode.BadRequest)
@@ -217,7 +219,7 @@ namespace Sendinblue.Api
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
-                throw new WebException($"SenderIp :{senderId} is not found.");
+                throw new WebException($"SenderIp: {senderId} is not found.");
             }
 
             if (response.StatusCode == HttpStatusCode.BadRequest)
@@ -253,7 +255,7 @@ namespace Sendinblue.Api
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
-                throw new WebException($"SenderIp :{senderId} is not found.");
+                throw new WebException($"SenderIp: {senderId} is not found.");
             }
 
             if (response.StatusCode == HttpStatusCode.BadRequest)
@@ -288,6 +290,100 @@ namespace Sendinblue.Api
             try
             {
                 return JsonConvert.DeserializeObject<IpsResult>(response.Content).Ips;
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Invalid deserialize object: {e.Message}");
+            }
+
+        }
+
+        #endregion
+
+        #region Process
+
+        public ProcessResult GetProcess(Dictionary<string, int> datas = null)
+        {
+            var request = new RestRequest("processes")
+            {
+                Method = Method.GET,
+                Timeout = ApiTimeout
+            };
+
+            request.AddHeader("api-key", ApiKey);
+
+            if (datas.ContainsKey(Limit))
+            {
+                request.AddQueryParameter(Limit, datas[Limit].ToString());
+            }
+
+            if (datas.ContainsKey(Offset))
+            {
+                request.AddQueryParameter(Offset, datas[Offset].ToString());
+            }
+
+            IRestResponse response = _client.Execute(request);
+
+            if (response.StatusCode == HttpStatusCode.BadRequest)
+            {
+                var badRequest = JsonConvert.DeserializeObject<BadRequest>(response.Content);
+                throw new WebException($"Bad request: {badRequest.Message}.");
+            }
+
+            try
+            {
+                return JsonConvert.DeserializeObject<ProcessResult>(response.Content);
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Invalid deserialize object: {e.Message}");
+            }
+
+        }
+
+        public Process GetProcess(int processId, Dictionary<string, int> datas = null)
+        {
+
+            if (processId != 0)
+            {
+                throw new IllegalArgumentException("Proccess Id is empty.");
+            }
+
+            var request = new RestRequest($"processes/{processId}")
+            {
+                Method = Method.GET,
+                Timeout = ApiTimeout
+            };
+
+            request.AddHeader("api-key", ApiKey);
+
+            if (datas.ContainsKey(Limit))
+            {
+                request.AddQueryParameter(Limit, datas[Limit].ToString());
+            }
+
+            if (datas.ContainsKey(Offset))
+            {
+                request.AddQueryParameter(Offset, datas[Offset].ToString());
+            }
+
+            IRestResponse response = _client.Execute(request);
+
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                throw new WebException($"ProccessId: {processId} is not found.");
+            }
+
+            if (response.StatusCode == HttpStatusCode.BadRequest)
+            {
+                var badRequest = JsonConvert.DeserializeObject<BadRequest>(response.Content);
+                throw new WebException($"Bad request: {badRequest.Message}.");
+            }
+
+            try
+            {
+                return JsonConvert.DeserializeObject<Process>(response.Content);
             }
             catch (Exception e)
             {
