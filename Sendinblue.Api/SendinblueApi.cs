@@ -14,6 +14,9 @@ namespace Sendinblue.Api
         public const string Domain = "domain";
         public const string Limit = "limit";
         public const string Offset = "offset";
+        public const string Name = "name";
+        public const string Email = "email";
+        public const string Ips = "ips";
 
         public string ApiKey { get; set; }
         public int ApiTimeout { get; set; }
@@ -35,74 +38,37 @@ namespace Sendinblue.Api
 
         public Account GetAccount()
         {
-            var request = new RestRequest("account")
-            {
-                Method = Method.GET,
-                Timeout = ApiTimeout
-            };
-            request.AddHeader("api-key", ApiKey);
-
-            IRestResponse response = _client.Execute(request);
-
-            if (response.StatusCode != HttpStatusCode.OK)
-            {
-                throw new WebException("Invalid request account.");
-            }
-            try
-            {
-                return JsonConvert.DeserializeObject<Account>(response.Content);
-            }
-            catch (Exception e)
-            {
-                throw new Exception($"Invalid deserialize object: {e.Message}.");
-            }
+            return CallApi<Account>(Method.GET, "account");
         }
 
         #endregion
 
         #region Sender
 
-        public IEnumerable<Sender> GetSenders(Dictionary<string, string> datas = null)
+        public IEnumerable<Sender> GetSenders(string ip = null, string domain = null)
         {
-            var request = new RestRequest("senders")
-            {
-                Method = Method.GET,
-                Timeout = ApiTimeout
-            };
 
-            request.AddHeader("api-key", ApiKey);
+            var datas = new Dictionary<string, string>();
 
-            if (datas.ContainsKey(Ip))
+            if (!string.IsNullOrEmpty(ip))
             {
-                request.AddQueryParameter(Ip, datas[Ip]);
+                datas.Add(Ip, ip);
             }
 
-            if (datas.ContainsKey(Domain))
+            if (!string.IsNullOrEmpty(domain))
             {
-                request.AddQueryParameter(Domain, datas[Domain]);
+                datas.Add(Domain, domain);
             }
 
-            IRestResponse response = _client.Execute(request);
+            var senderResult = CallApi<SenderResult>(Method.GET, "senders", datas);
 
-            if (response.StatusCode == HttpStatusCode.BadRequest)
-            {
-                var badRequest = JsonConvert.DeserializeObject<BadRequest>(response.Content);
-                throw new WebException($"Bad request: {badRequest.Message}.");
-            }
-
-            try
-            {
-                var senderResult = JsonConvert.DeserializeObject<SenderResult>(response.Content);
-                return senderResult.Senders;
-            }
-            catch (Exception e)
-            {
-                throw new Exception($"Invalid deserialize object: {e.Message}");
-            }
+            return senderResult.Senders;
         }
 
         public CreateSenderResult CreateSender(string name, string email, IpSender[] ips = null)
         {
+            var parameters = new Dictionary<string, string>();
+
             if (string.IsNullOrEmpty(name))
             {
                 throw new ArgumentException("Name is empty.");
@@ -112,44 +78,22 @@ namespace Sendinblue.Api
                 throw new ArgumentException("Email is empty.");
             }
 
-            var request = new RestRequest("senders")
-            {
-                Method = Method.POST,
-                Timeout = ApiTimeout
-            };
-
-            request.AddHeader("api-key", ApiKey);
-
-            request.AddParameter("name", name);
-            request.AddParameter("email", email);
+            parameters.Add(Name, name);
+            parameters.Add(Email, email);
 
             if (ips != null)
             {
                 var json = JsonConvert.SerializeObject(ips);
-                request.AddParameter("ips", json);
+                parameters.Add(Ips, json);
             }
 
-            IRestResponse response = _client.Execute(request);
-
-            if (response.StatusCode == HttpStatusCode.BadRequest)
-            {
-                var badRequest = JsonConvert.DeserializeObject<BadRequest>(response.Content);
-                throw new WebException($"Bad request: {badRequest.Message}.");
-            }
-
-            try
-            {
-                return JsonConvert.DeserializeObject<CreateSenderResult>(response.Content);
-            }
-            catch (Exception e)
-            {
-                throw new Exception($"Invalid deserialize object: {e.Message}");
-            }
-
+            return CallApi<CreateSenderResult>(Method.POST, "senders", parameters: parameters);
         }
 
         public void UpdateSender(int senderId, string name, string email, IpSender[] ips = null)
         {
+            var parameters = new Dictionary<string, string>();
+
             if (senderId != 0)
             {
                 throw new ArgumentException("SenderId is empty.");
@@ -163,41 +107,20 @@ namespace Sendinblue.Api
                 throw new ArgumentException("Email is empty.");
             }
 
-            var request = new RestRequest($"senders/{senderId}")
-            {
-                Method = Method.POST,
-                Timeout = ApiTimeout
-            };
-
-            request.AddHeader("api-key", ApiKey);
-
-            request.AddParameter("name", name);
-            request.AddParameter("email", email);
+            parameters.Add(Name, name);
+            parameters.Add(Email, email);
 
             if (ips != null)
             {
                 var json = JsonConvert.SerializeObject(ips);
-                request.AddParameter("ips", json);
+                parameters.Add(Ips, json);
             }
 
-            IRestResponse response = _client.Execute(request);
-
-            if (response.StatusCode == HttpStatusCode.NotFound)
+            var result = CallApi<int>(Method.PUT, $"senders/{senderId}", parameters: parameters, typeOfT: "senderId");
+            if (result != 0)
             {
-                throw new WebException($"SenderIp: {senderId} is not found.");
+                throw new Exception("Update sender failed.");
             }
-
-            if (response.StatusCode == HttpStatusCode.BadRequest)
-            {
-                var badRequest = JsonConvert.DeserializeObject<BadRequest>(response.Content);
-                throw new WebException($"Bad request: {badRequest.Message}.");
-            }
-
-            if (response.StatusCode != HttpStatusCode.Created)
-            {
-                throw new WebException("Invalid request account.");
-            }
-
         }
 
         public void DeleteSender(int senderId)
@@ -207,35 +130,15 @@ namespace Sendinblue.Api
                 throw new ArgumentException("SenderId is empty.");
             }
 
-            var request = new RestRequest($"senders/{senderId}")
+            var result = CallApi<int>(Method.DELETE, $"senders/{senderId}", typeOfT: "senderId");
+
+            if (result != 0)
             {
-                Method = Method.DELETE,
-                Timeout = ApiTimeout
-            };
-
-            request.AddHeader("api-key", ApiKey);
-
-            IRestResponse response = _client.Execute(request);
-
-            if (response.StatusCode == HttpStatusCode.NotFound)
-            {
-                throw new WebException($"SenderIp: {senderId} is not found.");
+                throw new Exception("Update sender failed.");
             }
-
-            if (response.StatusCode == HttpStatusCode.BadRequest)
-            {
-                var badRequest = JsonConvert.DeserializeObject<BadRequest>(response.Content);
-                throw new WebException($"Bad request: {badRequest.Message}.");
-            }
-
-            if (response.StatusCode != HttpStatusCode.NoContent)
-            {
-                throw new WebException("Invalid request account.");
-            }
-
         }
 
-        public IEnumerable<IpSender> GetIps(int senderId)
+        public IEnumerable<IpSender> GetIpsById(int senderId)
         {
 
             if (senderId != 0)
@@ -243,153 +146,60 @@ namespace Sendinblue.Api
                 throw new ArgumentException("SenderId is empty.");
             }
 
-            var request = new RestRequest($"senders/{senderId}/ips")
-            {
-                Method = Method.GET,
-                Timeout = ApiTimeout
-            };
+            var ipsResult = CallApi<IpsResult>(Method.GET, $"senders/{senderId}/ips", typeOfT: "senderIp");
 
-            request.AddHeader("api-key", ApiKey);
-
-            IRestResponse response = _client.Execute(request);
-
-            if (response.StatusCode == HttpStatusCode.NotFound)
-            {
-                throw new WebException($"SenderIp: {senderId} is not found.");
-            }
-
-            if (response.StatusCode == HttpStatusCode.BadRequest)
-            {
-                var badRequest = JsonConvert.DeserializeObject<BadRequest>(response.Content);
-                throw new WebException($"Bad request: {badRequest.Message}.");
-            }
-
-            try
-            {
-                return JsonConvert.DeserializeObject<IpsResult>(response.Content).Ips;
-            }
-            catch (Exception e)
-            {
-                throw new Exception($"Invalid deserialize object: {e.Message}");
-            }
+            return ipsResult.Ips;
 
         }
 
         public IEnumerable<IpSender> GetIps()
         {
-            var request = new RestRequest($"senders/ips")
-            {
-                Method = Method.GET,
-                Timeout = ApiTimeout
-            };
-
-            request.AddHeader("api-key", ApiKey);
-
-            IRestResponse response = _client.Execute(request);
-
-            try
-            {
-                return JsonConvert.DeserializeObject<IpsResult>(response.Content).Ips;
-            }
-            catch (Exception e)
-            {
-                throw new Exception($"Invalid deserialize object: {e.Message}");
-            }
-
+            var ipsResult = CallApi<IpsResult>(Method.GET, $"senders/ips");
+            return ipsResult.Ips;
         }
 
         #endregion
 
         #region Process
 
-        public ProcessResult GetProcess(Dictionary<string, int> datas = null)
+        public ProcessResult GetProcess(int limit = 0, int offset = 0)
         {
-            var request = new RestRequest("processes")
-            {
-                Method = Method.GET,
-                Timeout = ApiTimeout
-            };
+            var parameters = new Dictionary<string, string>();
 
-            request.AddHeader("api-key", ApiKey);
-
-            if (datas.ContainsKey(Limit))
+            if (limit != 0)
             {
-                request.AddQueryParameter(Limit, datas[Limit].ToString());
+                parameters.Add(Limit, limit.ToString());
             }
 
-            if (datas.ContainsKey(Offset))
+            if (offset != 0)
             {
-                request.AddQueryParameter(Offset, datas[Offset].ToString());
+                parameters.Add(Offset, offset.ToString());
             }
 
-            IRestResponse response = _client.Execute(request);
-
-            if (response.StatusCode == HttpStatusCode.BadRequest)
-            {
-                var badRequest = JsonConvert.DeserializeObject<BadRequest>(response.Content);
-                throw new WebException($"Bad request: {badRequest.Message}.");
-            }
-
-            try
-            {
-                return JsonConvert.DeserializeObject<ProcessResult>(response.Content);
-            }
-            catch (Exception e)
-            {
-                throw new Exception($"Invalid deserialize object: {e.Message}");
-            }
-
+            return CallApi<ProcessResult>(Method.GET, "processes", parameters: parameters);
         }
 
-        public Process GetProcess(int processId, Dictionary<string, int> datas = null)
+        public Process GetProcessById(int processId, int limit = 0, int offset = 0)
         {
 
             if (processId != 0)
             {
-                throw new IllegalArgumentException("Proccess Id is empty.");
+                throw new ArgumentException("Proccess Id is empty.");
             }
 
-            var request = new RestRequest($"processes/{processId}")
-            {
-                Method = Method.GET,
-                Timeout = ApiTimeout
-            };
+            var parameters = new Dictionary<string, string>();
 
-            request.AddHeader("api-key", ApiKey);
-
-            if (datas.ContainsKey(Limit))
+            if (limit != 0)
             {
-                request.AddQueryParameter(Limit, datas[Limit].ToString());
+                parameters.Add(Limit, limit.ToString());
             }
 
-            if (datas.ContainsKey(Offset))
+            if (offset != 0)
             {
-                request.AddQueryParameter(Offset, datas[Offset].ToString());
+                parameters.Add(Offset, offset.ToString());
             }
 
-            IRestResponse response = _client.Execute(request);
-
-
-            if (response.StatusCode == HttpStatusCode.NotFound)
-            {
-                throw new WebException($"ProccessId: {processId} is not found.");
-            }
-
-            if (response.StatusCode == HttpStatusCode.BadRequest)
-            {
-                var badRequest = JsonConvert.DeserializeObject<BadRequest>(response.Content);
-                throw new WebException($"Bad request: {badRequest.Message}.");
-            }
-
-            try
-            {
-                return JsonConvert.DeserializeObject<Process>(response.Content);
-            }
-            catch (Exception e)
-            {
-                throw new Exception($"Invalid deserialize object: {e.Message}");
-            }
-
+            return CallApi<Process>(Method.GET, $"processes/{processId}", parameters: parameters, typeOfT: "ProcessId");
         }
 
         #endregion
@@ -397,22 +207,7 @@ namespace Sendinblue.Api
         #region Campaign
         public IEnumerable<Campaign> GetCampaigns()
         {
-            var restRequest = new RestRequest("emailCampaigns")
-            {
-                Method = Method.GET,
-                Timeout = ApiTimeout
-            };
-            restRequest.AddHeader("api-key", ApiKey);
-
-            var response = _client.Execute(restRequest);
-
-            if (response.StatusCode == HttpStatusCode.BadRequest)
-            {
-                var badRequest = JsonConvert.DeserializeObject<BadRequest>(response.Content);
-                throw new WebException($"Bad request: {badRequest.Message}.");
-            }
-
-            var campaignResult = JsonConvert.DeserializeObject<CampaignResult>(response.Content);
+            var campaignResult = CallApi<CampaignResult>(Method.GET, "emailCampaigns");
             return campaignResult.Campaigns;
         }
 
@@ -423,18 +218,45 @@ namespace Sendinblue.Api
                 throw new ArgumentException("CampaignId is empty.");
             }
 
-            var restRequest = new RestRequest($"emailCampaigns/{campaignId}")
+            return CallApi<Campaign>(Method.GET, $"emailCampaigns/{campaignId}", typeOfT: "CampaignId");
+        }
+
+        #endregion
+
+        private T CallApi<T>(Method method, string request,
+                             Dictionary<string, string> data = null,
+                             Dictionary<string, string> parameters = null,
+                             string typeOfT = null)
+        {
+            var restRequest = new RestRequest(request)
             {
-                Method = Method.GET,
+                Method = method,
                 Timeout = ApiTimeout
             };
 
             restRequest.AddHeader("api-key", ApiKey);
+
+            if (data != null)
+            {
+                foreach (var key in data.Keys)
+                {
+                    restRequest.AddQueryParameter(key, data[key]);
+                }
+            }
+
+            if (parameters != null)
+            {
+                foreach (var key in parameters.Keys)
+                {
+                    restRequest.AddParameter(key, data[key]);
+                }
+            }
+
             var response = _client.Execute(restRequest);
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
-                throw new WebException($"SenderIp :{campaignId} is not found.");
+                throw new WebException($"{typeOfT} is not found.");
             }
 
             if (response.StatusCode == HttpStatusCode.BadRequest)
@@ -443,16 +265,24 @@ namespace Sendinblue.Api
                 throw new WebException($"Bad request: {badRequest.Message}.");
             }
 
+            if (response.StatusCode == HttpStatusCode.Created)
+            {
+                return default(T);
+            }
+
+            if (response.StatusCode == HttpStatusCode.NoContent)
+            {
+                return default(T);
+            }
+
             try
             {
-                return JsonConvert.DeserializeObject<Campaign>(response.Content);
+                return JsonConvert.DeserializeObject<T>(response.Content);
             }
             catch (Exception e)
             {
                 throw new Exception($"Invalid deserialize object: {e.Message}");
             }
         }
-
-        #endregion
     }
 }

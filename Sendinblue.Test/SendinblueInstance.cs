@@ -6,8 +6,7 @@ namespace Sendinblue.Test
 {
     public class SendinblueInstance
     {
-        public const string APIKEY = "Your API Key";
-
+        public const string APIKEY = "your api key";
         [Fact]
         public void CreateInstance()
         {
