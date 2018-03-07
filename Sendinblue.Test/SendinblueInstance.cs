@@ -6,7 +6,8 @@ namespace Sendinblue.Test
 {
     public class SendinblueInstance
     {
-        public const string APIKEY = "Your API Key";
+        public const string APIKEY = "your api";
+        public const string Email = "admin@example.com";
 
         [Fact]
         public void CreateInstance()
@@ -48,6 +49,22 @@ namespace Sendinblue.Test
             var sendinblueApi = new SendinblueAPI(APIKEY);
             var senders = sendinblueApi.GetSenders();
             Assert.NotNull(senders);
+        }
+
+        [Fact]
+        public void GetContacts()
+        {
+            var sendinblueApi = new SendinblueAPI(APIKEY);
+            var contacts = sendinblueApi.GetContacts();
+            Assert.NotNull(contacts);
+        }
+
+        [Fact]
+        public void GetContactByEmail()
+        {
+            var sendinblueApi = new SendinblueAPI(APIKEY);
+            var contact = sendinblueApi.GetContactByEmail(Email);
+            Assert.NotNull(contact);
         }
     }
 }
