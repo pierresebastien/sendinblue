@@ -223,6 +223,25 @@ namespace Sendinblue.Api
 
         #endregion
 
+        #region Contact
+
+        public IEnumerable<Contact> GetContacts()
+        {
+            var contactResult = CallApi<ContactsResult>(Method.GET, "contacts");
+            return contactResult.Contacts;
+        }
+
+        public Contact GetContactByEmail(string email)
+        {
+            if (string.IsNullOrEmpty(email))
+            {
+                throw new ArgumentException("Email is empty.");
+            }
+            return CallApi<Contact>(Method.GET, $"contacts/{email}", typeOfT: "email");
+        }
+
+        #endregion
+
         private T CallApi<T>(Method method, string request,
                              Dictionary<string, string> data = null,
                              Dictionary<string, string> parameters = null,
@@ -248,7 +267,7 @@ namespace Sendinblue.Api
             {
                 foreach (var key in parameters.Keys)
                 {
-                    restRequest.AddParameter(key, data[key]);
+                    restRequest.AddParameter(key, parameters[key]);
                 }
             }
 
