@@ -11,27 +11,13 @@ namespace Sendinblue.Api.Business
         public bool SmsBlacklisted { get; set; }
         public DateTime? ModifiedAt { get; set; }
         public int[] ListIds { get; set; }
-        public ContactAttributes Attributes { get; set; }
+        public Dictionary<string, string> Attributes { get; set; }
         public Dictionary<string, dynamic> Statistics { get; set; }
     }
 
     public class ContactsResult
     {
         public Contact[] Contacts { get; set; }
-    }
-
-    public class ContactAttributes
-    {
-        public string SMS { get; set; }
-        public string Identification { get; set; }
-        public string Civ { get; set; }
-        public string Nom { get; set; }
-        public string Prenom { get; set; }
-        public DateTime? Dob { get; set; }
-        public string Address { get; set; }
-        public string Zip_Code { get; set; }
-        public string City { get; set; }
-        public string Action_Code { get; set; }
     }
 
     public class ContactStatistic
